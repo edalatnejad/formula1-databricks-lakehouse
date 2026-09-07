@@ -1,0 +1,59 @@
+resources:
+  jobs:
+    job_formula1_incremental_batch_Orchestration:
+      name: job_formula1_incremental_batch_Orchestration
+      tasks:
+      - task_key: 01_Identify_Next_Batch
+        notebook_task:
+          notebook_path: ../notebooks/06-orchestration/01.Identify Next Batch
+          source: WORKSPACE
+        environment_key: Default
+      - task_key: Is_Batch_True
+        depends_on:
+        - task_key: 01_Identify_Next_Batch
+        condition_task:
+          op: EQUAL_TO
+          left: '{{tasks.01_Identify_Next_Batch.values.has_batch}}'
+          right: 'true'
+      - task_key: 02_Create_New_Batch
+        depends_on:
+        - task_key: Is_Batch_True
+          outcome: 'true'
+        notebook_task:
+          notebook_path: ../notebooks/06-orchestration/02.Create New Batch
+          base_parameters:
+            p_batch_id: '{{tasks.01_Identify_Next_Batch.values.p_batch_id}}'
+          source: WORKSPACE
+        environment_key: Default
+      - task_key: Run_job_formula1_Lakehouse_incremental_Refresh
+        depends_on:
+        - task_key: 02_Create_New_Batch
+        run_job_task:
+          job_id: ${var.incremental_refresh_job_id}
+          job_parameters:
+            p_batch_id: '{{tasks.01_Identify_Next_Batch.values.p_batch_id}}'
+      - task_key: 03_Complete_Batch
+        depends_on:
+        - task_key: Run_job_formula1_Lakehouse_incremental_Refresh
+        notebook_task:
+          notebook_path: ../notebooks/06-orchestration/03.Complete Batch
+          base_parameters:
+            p_batch_id: '{{tasks.01_Identify_Next_Batch.values.p_batch_id}}'
+          source: WORKSPACE
+        environment_key: Default
+      - task_key: 04_Fail_Batch
+        depends_on:
+        - task_key: Run_job_formula1_Lakehouse_incremental_Refresh
+        run_if: AT_LEAST_ONE_FAILED
+        notebook_task:
+          notebook_path: ../notebooks/06-orchestration/04.Fail Batch
+          base_parameters:
+            p_batch_id: '{{tasks.01_Identify_Next_Batch.values.p_batch_id}}'
+          source: WORKSPACE
+      queue:
+        enabled: true
+      environments:
+      - environment_key: Default
+        spec:
+          environment_version: '5'
+      performance_target: PERFORMANCE_OPTIMIZED

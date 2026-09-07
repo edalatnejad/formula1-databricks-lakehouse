@@ -1,0 +1,109 @@
+resources:
+  jobs:
+    job_formula1_Lakehouse_incremental_Refresh:
+      name: job_formula1_Lakehouse_incremental_Refresh
+      tasks:
+      - task_key: 01_Ingest_Circuits_File
+        notebook_task:
+          notebook_path: ../notebooks/02-bronze/01.Ingest Circuits File
+          source: WORKSPACE
+      - task_key: 01_Transform_Circuits_Data
+        depends_on:
+        - task_key: 01_Ingest_Circuits_File
+        notebook_task:
+          notebook_path: ../notebooks/03-silver/01.Transform Circuits Data
+          source: WORKSPACE
+      - task_key: 02_Ingest_Races_File
+        notebook_task:
+          notebook_path: ../notebooks/02-bronze/02.Ingest Races File
+          source: WORKSPACE
+      - task_key: 02_Transform_Races_Data
+        depends_on:
+        - task_key: 02_Ingest_Races_File
+        notebook_task:
+          notebook_path: ../notebooks/03-silver/02.Transform Races Data
+          source: WORKSPACE
+      - task_key: 01_Build_Races_Dimension
+        depends_on:
+        - task_key: 02_Transform_Races_Data
+        - task_key: 01_Transform_Circuits_Data
+        notebook_task:
+          notebook_path: ../notebooks/04-gold/01.Build Races Dimension
+          source: WORKSPACE
+        environment_key: Default
+      - task_key: 03_Ingest_Constructors_File
+        notebook_task:
+          notebook_path: ../notebooks/02-bronze/03.Ingest Constructors File
+          source: WORKSPACE
+      - task_key: 03_Transform_Constructors_Data
+        depends_on:
+        - task_key: 03_Ingest_Constructors_File
+        notebook_task:
+          notebook_path: ../notebooks/03-silver/03.Transform Constructors Data
+          source: WORKSPACE
+      - task_key: 04_Ingest_Drivers_File
+        notebook_task:
+          notebook_path: ../notebooks/02-bronze/04.Ingest Drivers File
+          source: WORKSPACE
+      - task_key: 04_Transform_Drivers_Data
+        depends_on:
+        - task_key: 04_Ingest_Drivers_File
+        notebook_task:
+          notebook_path: ../notebooks/03-silver/04.Transform Drivers Data
+          source: WORKSPACE
+      - task_key: 05_Ingest_Results_File
+        notebook_task:
+          notebook_path: ../notebooks/02-bronze/05.Ingest Results File
+          source: WORKSPACE
+        environment_key: Default
+      - task_key: 05_Transform_Results_Data__Fully_Chained
+        depends_on:
+        - task_key: 05_Ingest_Results_File
+        notebook_task:
+          notebook_path: ../notebooks/03-silver/05.Transform Results Data (Fully-Chained)
+          source: WORKSPACE
+      - task_key: 06_Ingest_Sprints_File
+        notebook_task:
+          notebook_path: ../notebooks/02-bronze/06.Ingest Sprints File
+          source: WORKSPACE
+      - task_key: 06_Transform_Sprints_Data
+        depends_on:
+        - task_key: 06_Ingest_Sprints_File
+        notebook_task:
+          notebook_path: ../notebooks/03-silver/06.Transform Sprints Data
+          source: WORKSPACE
+      - task_key: 04_Build_Results_Fact
+        depends_on:
+        - task_key: 05_Transform_Results_Data__Fully_Chained
+        - task_key: 06_Transform_Sprints_Data
+        notebook_task:
+          notebook_path: ../notebooks/04-gold/04.Build Results Fact
+          source: WORKSPACE
+      - task_key: 91_Build_Nationality_Region_Reference
+        notebook_task:
+          notebook_path: ../notebooks/04-gold/91.Build Nationality Region Reference
+          source: WORKSPACE
+      - task_key: 02_Build_Constructors_Dimension
+        depends_on:
+        - task_key: 03_Transform_Constructors_Data
+        - task_key: 91_Build_Nationality_Region_Reference
+        notebook_task:
+          notebook_path: ../notebooks/04-gold/02.Build Constructors Dimension
+          source: WORKSPACE
+      - task_key: 03_Build_Drivers_Dimension
+        depends_on:
+        - task_key: 04_Transform_Drivers_Data
+        - task_key: 91_Build_Nationality_Region_Reference
+        notebook_task:
+          notebook_path: ../notebooks/04-gold/03.Build Drivers Dimension
+          source: WORKSPACE
+      queue:
+        enabled: true
+      parameters:
+      - name: p_batch_id
+        default: ''
+      environments:
+      - environment_key: Default
+        spec:
+          environment_version: '5'
+      performance_target: PERFORMANCE_OPTIMIZED
