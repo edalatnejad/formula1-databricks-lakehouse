@@ -15,6 +15,20 @@ The project implements a Medallion architecture with Bronze, Silver and Gold lay
 * **Gold:** Builds dimensions and a session-results fact table for analytics.
 * **Orchestration:** Uses Databricks Jobs to identify the next batch, execute the processing pipeline and update batch status.
 
+## Databricks Jobs
+
+The project includes two job definitions:
+
+### Incremental Refresh Job
+
+Runs the Bronze ingestion, Silver transformations and Gold builds using task dependencies.
+
+### Batch Orchestration Job
+
+Identifies the next available batch, passes the batch ID to the refresh job and updates the batch-control status after processing.
+
+The job definitions are available in the [`jobs`](jobs/) folder.
+
 ## Technologies
 
 Databricks · PySpark · Spark SQL · Delta Lake · Unity Catalog · Databricks Jobs · Python · SQL
@@ -39,6 +53,10 @@ notebooks/
 ├── 04-gold/
 ├── 05-analytics/
 └── 06-orchestration/
+
+jobs/
+├── incremental_refresh.yml
+└── batch_orchestration.yml
 ```
 
 ## Project Background
